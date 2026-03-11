@@ -1,62 +1,54 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Sesuaikan ID dengan HTML baru (automationForm)
-    const form = document.getElementById('automationForm');
-    const submitBtn = document.getElementById('submitBtn');
+    const form = document.getElementById('scrapeForm');
+    const btnScrape = document.getElementById('btnScrape');
     const btnText = document.getElementById('btnText');
-    const loader = document.getElementById('loader');
-    const resultArea = document.getElementById('resultArea');
-    const errorArea = document.getElementById('errorArea');
-    const errorText = document.getElementById('errorText');
-    const downloadLink = document.getElementById('downloadLink');
+    const loadingRing = document.getElementById('loadingRing');
+    
+    const resultBox = document.getElementById('resultBox');
+    const btnDownload = document.getElementById('btnDownload');
+    
+    const errorBox = document.getElementById('errorBox');
+    const errorMsg = document.getElementById('errorMsg');
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        // 1. Ambil data dari input ID yang baru
-        const projectUrl = document.getElementById('projectInput').value;
-        const smartGenerate = document.getElementById('smartGenerate').checked;
-        const multiSync = document.getElementById('multiSync').checked;
+        const url = document.getElementById('targetUrl').value;
+        const renameAssets = document.getElementById('optRename').checked;
+        const saveStructure = document.getElementById('optStructure').checked;
 
-        // 2. Set UI ke mode Loading
         setLoading(true);
-        resultArea.classList.add('hidden');
-        errorArea.classList.add('hidden');
+        resultBox.classList.add('hidden');
+        errorBox.classList.add('hidden');
 
         try {
-            // 3. Kirim request ke Backend
+            // Tembak API Backend Vercel
             const response = await fetch('/api', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    url: projectUrl,
+                    url: url,
                     options: {
-                        smartGenerate,
-                        multiSync
+                        smartGenerate: renameAssets, // Mapping sesuai backend yg kita buat sblmnya
+                        multiSync: saveStructure
                     }
                 })
             });
 
             const data = await response.json();
 
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to initialize creative workflow.');
-            }
+            if (!response.ok) throw new Error(data.error || 'Gagal mengekstrak website.');
+            if (data.error && data.error.code !== 0) throw new Error(data.error.text);
 
-            if (data.error && data.error.code !== 0) {
-                 throw new Error(data.error.text);
-            }
-
-            // 4. Sukses
-            downloadLink.href = data.downloadUrl || '#';
-            resultArea.classList.remove('hidden');
+            // Berhasil
+            btnDownload.href = data.downloadUrl || '#';
+            resultBox.classList.remove('hidden');
 
         } catch (error) {
-            // 5. Error
+            // Gagal
             console.error(error);
-            errorText.innerText = error.message;
-            errorArea.classList.remove('hidden');
+            errorMsg.innerText = error.message;
+            errorBox.classList.remove('hidden');
         } finally {
             setLoading(false);
         }
@@ -64,15 +56,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setLoading(isLoading) {
         if (isLoading) {
-            submitBtn.disabled = true;
-            // Menggunakan bahasa Inggris agar sesuai tema baru
-            btnText.innerHTML = 'Processing...'; 
-            loader.classList.remove('hidden');
+            btnScrape.disabled = true;
+            btnText.innerHTML = '';
+            loadingRing.classList.remove('hidden');
         } else {
-            submitBtn.disabled = false;
-            // Menggunakan innerHTML agar icon FontAwesome tetap muncul
-            btnText.innerHTML = 'Start Automating <i class="fas fa-arrow-right"></i>';
-            loader.classList.add('hidden');
+            btnScrape.disabled = false;
+            btnText.innerHTML = 'Mulai Scraping <i class="fas fa-arrow-right"></i>';
+            loadingRing.classList.add('hidden');
         }
     }
 });
